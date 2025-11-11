@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rehashed - Web3 Data Engineering</title>
+    <title>Rehashed LLC</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <style>
         * {
             margin: 0;
@@ -18,7 +20,36 @@
             line-height: 1.6;
             overflow-x: hidden;
         }
-
+        .logo-container {
+            text-align: center;
+        }
+        
+        .hash-symbol {
+            display: inline-block;
+            animation: rotate 4s linear infinite;
+            width: 120px;
+            height: 120px;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .brand-name {
+            color: #fff;
+            font-size: 32px;
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+        
+        .tagline {
+            color: #666;
+            font-size: 14px;
+            margin-top: 15px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -299,13 +330,23 @@
     </style>
 </head>
 <body>
+     
     <div class="canvas-container" id="canvas-container"></div>
     
     <div class="content">
         <header>
-            <div class="container">
-                <div class="logo">rehashed</div>
-            </div>
+           <div class="logo-container">
+        <div class="hash-symbol">
+            <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                <rect x="10" y="35" width="100" height="12" fill="#fff"/>
+                <rect x="10" y="73" width="100" height="12" fill="#fff"/>
+                <rect x="35" y="10" width="12" height="100" fill="#fff"/>
+                <rect x="73" y="10" width="12" height="100" fill="#fff"/>
+            </svg>
+        </div>
+        <div class="brand-name">rehashed.work</div>
+        <div class="tagline">Recycled. Refined. Renewed.</div>
+    </div>
         </header>
 
         <section class="hero">
