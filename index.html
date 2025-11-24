@@ -20,29 +20,30 @@
             line-height: 1.6;
             overflow-x: hidden;
         }
+
         .logo-container {
             text-align: center;
         }
-        
+
         .hash-symbol {
             display: inline-block;
             animation: rotate 4s linear infinite;
             width: 120px;
             height: 120px;
         }
-        
+
         @keyframes rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        
+
         .brand-name {
             color: #fff;
             font-size: 32px;
             letter-spacing: 4px;
             font-weight: 300;
         }
-        
+
         .tagline {
             color: #666;
             font-size: 14px;
@@ -50,40 +51,13 @@
             letter-spacing: 2px;
             text-transform: uppercase;
         }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 40px;
             position: relative;
             z-index: 10;
-        }
-
-        .canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .canvas-container canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        header {
-            padding: 40px 0;
-            position: relative;
-            z-index: 100;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
         }
 
         .hero {
@@ -179,67 +153,6 @@
             line-height: 1.6;
         }
 
-        .clients-section {
-            padding: 120px 0;
-            border-top: 1px solid #222;
-            position: relative;
-        }
-
-        .clients-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-top: 60px;
-        }
-
-        .client-item {
-            padding: 40px;
-            border: 1px solid #222;
-            border-radius: 12px;
-            transition: all 0.4s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 140px;
-            background: #0a0a0a;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        .client-item.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .client-item:hover {
-            border-color: #444;
-            transform: translateY(-8px);
-            background: #111;
-        }
-
-        .client-logo {
-            max-width: 100%;
-            height: auto;
-            max-height: 60px;
-            filter: brightness(0) invert(1) opacity(0.6);
-            transition: filter 0.3s ease;
-        }
-
-        .client-item:hover .client-logo {
-            filter: brightness(0) invert(1) opacity(1);
-        }
-
-        .client-name {
-            font-size: 24px;
-            color: #666;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .client-item:hover .client-name {
-            color: #fff;
-        }
-
         .cta-section {
             padding: 160px 0;
             text-align: center;
@@ -303,10 +216,6 @@
                 gap: 20px;
             }
 
-            .clients-grid {
-                grid-template-columns: 1fr;
-            }
-
             .section {
                 padding: 60px 0;
             }
@@ -316,116 +225,75 @@
             }
         }
 
-        .client-item:nth-child(1) { transition-delay: 0.1s; }
-        .client-item:nth-child(2) { transition-delay: 0.15s; }
-        .client-item:nth-child(3) { transition-delay: 0.2s; }
-        .client-item:nth-child(4) { transition-delay: 0.25s; }
-        .client-item:nth-child(5) { transition-delay: 0.3s; }
-        .client-item:nth-child(6) { transition-delay: 0.35s; }
-        .client-item:nth-child(7) { transition-delay: 0.4s; }
-
+        /* Animations for delayed visibility */
         .content-item:nth-child(1) { transition-delay: 0.1s; }
         .content-item:nth-child(2) { transition-delay: 0.2s; }
         .content-item:nth-child(3) { transition-delay: 0.3s; }
+
+        .cta-title, .cta-button {
+            transition-delay: 0.4s;
+        }
     </style>
 </head>
 <body>
-     
-    <div class="canvas-container" id="canvas-container"></div>
-    
     <div class="content">
         <header>
-           <div class="logo-container">
-        <div class="hash-symbol">
-            <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="35" width="100" height="12" fill="#fff"/>
-                <rect x="10" y="73" width="100" height="12" fill="#fff"/>
-                <rect x="35" y="10" width="12" height="100" fill="#fff"/>
-                <rect x="73" y="10" width="12" height="100" fill="#fff"/>
-            </svg>
-        </div>
-        <div class="brand-name">rehashed.work</div>
-        <div class="tagline">Recycled. Refined. Renewed.</div>
-    </div>
+            <div class="logo-container">
+                <div class="hash-symbol">
+                    <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="10" y="35" width="100" height="12" fill="#fff"/>
+                        <rect x="10" y="73" width="100" height="12" fill="#fff"/>
+                        <rect x="35" y="10" width="12" height="100" fill="#fff"/>
+                        <rect x="73" y="10" width="12" height="100" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="brand-name">rehashed.work</div>
+                <div class="tagline">Decoding the chain, one bit at a time.</div>
+            </div>
         </header>
 
         <section class="hero">
             <div class="container">
                 <div class="hero-content">
-                    <h1 class="hero-title">Data engineering<br>for all</h1>
-                    <p class="hero-desc">Rehashed LLC specializes in data infrastructure, helping leading companies unlock insights from data.</p>
+                    <h1 class="hero-title">Next-Gen Data Engineering<br>for Web3</h1>
+                    <p class="hero-desc">We build scalable blockchain data infrastructure that turns complex transactions into actionable insights.</p>
                 </div>
             </div>
         </section>
 
         <section class="section">
             <div class="container">
-                <div class="section-label">What we do</div>
+                <div class="section-label">What We Build</div>
                 <div class="content-grid">
                     <div class="content-item">
                         <div class="content-number">01</div>
                         <div class="content-text">
-                            <h3>Data pipeline architecture</h3>
-                            <p>Design and implement scalable data infrastructure to ingest, process, and analyze data at any scale.</p>
+                            <h3>High-Throughput Data Pipelines</h3>
+                            <p>Designing real-time event-driven ETL pipelines to ingest, process, and query massive volumes of blockchain data with sub-second latency.</p>
                         </div>
                     </div>
                     <div class="content-item">
                         <div class="content-number">02</div>
                         <div class="content-text">
-                            <h3>Custom analytics solutions</h3>
-                            <p>Build tailored analytics platforms and dashboards that transform raw data into actionable business intelligence.</p>
+                            <h3>Cross-Chain Insights</h3>
+                            <p>Delivering deep analytics on blockchain ecosystems with contract decoding, wallet-level attribution, and entity intelligence.</p>
                         </div>
                     </div>
                     <div class="content-item">
                         <div class="content-number">03</div>
                         <div class="content-text">
-                            <h3>Data expertise</h3>
-                            <p>Leverage deep understanding of protocols, contracts, and ecosystems to extract meaningful insights.</p>
+                            <h3>AI-Powered Data Models</h3>
+                            <p>Integrating machine learning and automation to surface insights, detect anomalies, and predict market trends in real-time.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- <section class="clients-section">
-            <div class="container">
-                <div class="section-label">Trusted by</div>
-                <div class="clients-grid">
-                    <div class="client-item">
-                        <img src="https://cryptologos.cc/logos/versions/flipside-crypto-flip-logo.svg?v=032" alt="Flipside Crypto" class="client-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span class="client-name" style="display:none;">Flipside Crypto</span>
-                    </div>
-                    <div class="client-item">
-                        <img src="https://summer.fi/summer-fi-logo.svg" alt="Summer.fi" class="client-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span class="client-name" style="display:none;">Summer.fi</span>
-                    </div>
-                    <div class="client-item">
-                        <img src="https://poap.xyz/logo.svg" alt="POAP" class="client-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span class="client-name" style="display:none;">POAP</span>
-                    </div>
-                    <div class="client-item">
-                        <img src="https://scroll.io/logo.svg" alt="Scroll" class="client-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span class="client-name" style="display:none;">Scroll</span>
-                    </div>
-                    <div class="client-item">
-                        <img src="https://blockworks.co/logo.svg" alt="Blockworks" class="client-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span class="client-name" style="display:none;">Blockworks</span>
-                    </div>
-                    <div class="client-item">
-                        <img src="https://www.dash.org/assets/img/dash-logo.svg" alt="Dash" class="client-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span class="client-name" style="display:none;">Dash</span>
-                    </div>
-                    <div class="client-item">
-                        <span class="client-name" style="display:block;">Interspace</span>
-                    </div>
-                </div>
-            </div>
-        </section> -->
-
         <section class="cta-section">
             <div class="container">
-                <h2 class="cta-title">Ready to transform<br>your data?</h2>
-                <a href="mailto:hello@rehashed.work" class="cta-button">Get in touch</a>
+                <h2 class="cta-title">Ready to Decode the Data?</h2>
+                <a href="mailto:hello@rehashed.work" class="cta-button">Get in Touch</a>
             </div>
         </section>
 
@@ -438,154 +306,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Initialize Three.js scene
-        let scene, camera, renderer, meshGroup;
-        let meshes = [];
-        let mousePosition = new THREE.Vector2(0, 0);
-        let targetMousePosition = new THREE.Vector2(0, 0);
-        let scrollOffset = 0;
-        let time = 0;
-
-        function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 2.2;
-
-            // Renderer
-            const container = document.getElementById('canvas-container');
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
-
-            // Create mesh group
-            meshGroup = new THREE.Group();
-            scene.add(meshGroup);
-
-            // Create ribbon-like meshes
-            const numRibbons = 120;
-            const ribbonHeight = 0.016666666666666666;
-
-            for (let i = 0; i < numRibbons; i++) {
-                const geometry = createRibbonGeometry();
-                const material = new THREE.MeshBasicMaterial({
-                    color: 0x444444,
-                    wireframe: true,
-                    transparent: true,
-                    opacity: 0.3
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                const yPos = ribbonHeight * i - 1;
-                mesh.position.set(0, yPos, 0);
-                mesh.userData.index = i;
-                
-                meshes.push(mesh);
-                meshGroup.add(mesh);
-            }
-
-            // Event listeners
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('scroll', onScroll);
-            window.addEventListener('resize', onResize);
-
-            // Start animation
-            animate();
-        }
-
-        function createRibbonGeometry() {
-            const geometry = new THREE.BufferGeometry();
-            const segments = 100;
-            const width = 4.4;
-            const height = 0.016666666666666666;
-
-            const vertices = [];
-            const indices = [];
-
-            // Create vertices
-            for (let i = 0; i <= segments; i++) {
-                const x = (i / segments - 0.5) * width;
-                vertices.push(x, -height / 2, 0);
-                vertices.push(x, height / 2, 0);
-            }
-
-            // Create indices
-            for (let i = 0; i < segments; i++) {
-                const a = i * 2;
-                const b = a + 1;
-                const c = a + 2;
-                const d = a + 3;
-
-                indices.push(a, c, b);
-                indices.push(b, c, d);
-            }
-
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            geometry.setIndex(indices);
-
-            return geometry;
-        }
-
-        function onMouseMove(event) {
-            targetMousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
-            targetMousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        }
-
-        function onScroll() {
-            scrollOffset = window.scrollY / window.innerHeight * 0.24;
-        }
-
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            time += 0.01;
-
-            // Smooth mouse movement
-            mousePosition.x += (targetMousePosition.x - mousePosition.x) * 0.1;
-            mousePosition.y += (targetMousePosition.y - mousePosition.y) * 0.1;
-
-            // Update mesh group rotation
-            meshGroup.rotation.x = mousePosition.y * 0.3;
-            meshGroup.rotation.y = mousePosition.x * 0.3;
-            meshGroup.position.z = -(scrollOffset * 0.24);
-
-            // Animate individual meshes
-            meshes.forEach((mesh, index) => {
-                const geometry = mesh.geometry;
-                const positions = geometry.attributes.position.array;
-                
-                // Wave animation
-                for (let i = 0; i < positions.length; i += 3) {
-                    const x = positions[i];
-                    const originalY = i % 6 === 0 ? -0.008333333333333333 : 0.008333333333333333;
-                    
-                    positions[i + 2] = Math.sin(x * 2 + time + index * 0.1) * 0.05 * (1 + scrollOffset);
-                }
-                
-                geometry.attributes.position.needsUpdate = true;
-                
-                // Rotation based on scroll
-                mesh.rotation.y = -(scrollOffset * index * 0.043);
-                mesh.rotation.x = -(scrollOffset * index * 0.043) * 0.3;
-
-                // Fade based on distance
-                const distanceFromCenter = Math.abs(mesh.position.y + scrollOffset * 0.24);
-                mesh.material.opacity = Math.max(0.1, 0.5 - distanceFromCenter * 0.3);
-            });
-
-            renderer.render(scene, camera);
-        }
-
         // Intersection Observer for scroll animations
         const observerOptions = {
             threshold: 0.1,
@@ -602,9 +322,7 @@
 
         // Observe all animated elements
         document.addEventListener('DOMContentLoaded', () => {
-            init();
-            
-            document.querySelectorAll('.content-item, .client-item, .cta-title, .cta-button').forEach(el => {
+            document.querySelectorAll('.content-item, .cta-title, .cta-button').forEach(el => {
                 observer.observe(el);
             });
         });
