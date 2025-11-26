@@ -1,941 +1,755 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>North Star Metrics Dashboard</title>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #0a0a0a;
+        color: #e0e0e0;
+        overflow-x: hidden;
+    }
+    
+    #canvas-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+    
+    .dashboard-container { 
+        position: relative;
+        z-index: 1;
+        max-width: 1400px; 
+        margin: 0 auto;
+        padding: 40px 30px;
+    }
+    
+    .controls { 
+        display: flex; 
+        gap: 20px; 
+        margin-bottom: 40px;
+        background: rgba(20, 20, 20, 0.7);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .controls > div {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .controls label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #888;
+    }
+    
+    .controls input, .controls select {
+        background: rgba(40, 40, 40, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #e0e0e0;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .controls button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 10px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+        align-self: flex-end;
+    }
+    
+    .controls button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .chart-container {
+        background: rgba(20, 20, 20, 0.7);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .chart-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: -0.5px;
+    }
+    
+    .legend {
+        display: flex;
+        gap: 20px;
+        font-size: 13px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+    }
+    
+    svg { 
+        width: 100%; 
+        height: 320px;
+    }
+    
+    .axis line, .axis path {
+        stroke: rgba(255, 255, 255, 0.2);
+    }
+    
+    .axis text {
+        fill: #888;
+        font-size: 11px;
+    }
+    
+    .tooltip {
+        position: fixed;
+        padding: 10px 14px;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        border-radius: 8px;
+        font-size: 13px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 60px;
+        padding-top: 40px;
+    }
+    
+    .header-title {
+        font-size: 72px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -2px;
+        margin-bottom: 16px;
+    }
+    
+    .header-subtitle {
+        font-size: 20px;
+        color: #888;
+        font-weight: 400;
+        letter-spacing: 0.5px;
+    }
+</style>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: #000;
-            color: #fff;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .logo-container {
-            text-align: center;
-        }
-
-        .hash-symbol {
-            display: inline-block;
-            animation: rotate 4s linear infinite;
-            width: 120px;
-            height: 120px;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .brand-name {
-            color: #fff;
-            font-size: 32px;
-            letter-spacing: 4px;
-            font-weight: 300;
-        }
-
-        .tagline {
-            color: #666;
-            font-size: 14px;
-            margin-top: 15px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 40px;
-            position: relative;
-            z-index: 10;
-        }
-
-        .canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .canvas-container canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        header {
-            padding: 40px 0;
-            position: relative;
-            z-index: 100;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }
-
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-        }
-
-        .hero-content {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 0.8s ease forwards;
-        }
-
-        .hero-title {
-            font-size: clamp(48px, 8vw, 96px);
-            font-weight: 700;
-            line-height: 1.1;
-            letter-spacing: -0.03em;
-            margin-bottom: 40px;
-            background: linear-gradient(135deg, #fff 0%, #888 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-desc {
-            font-size: clamp(20px, 2.5vw, 32px);
-            color: #999;
-            max-width: 800px;
-            line-height: 1.4;
-            font-weight: 300;
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .section {
-            padding: 100px 0;
-            border-top: 1px solid #222;
-            position: relative;
-        }
-
-        .section-label {
-            font-size: 14px;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #666;
-            margin-bottom: 60px;
-        }
-
-        .content-grid {
-            display: grid;
-            gap: 80px;
-        }
-
-        .content-item {
-            display: grid;
-            grid-template-columns: 120px 1fr;
-            gap: 40px;
-            align-items: start;
-            opacity: 0;
-            transform: translateY(50px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-
-        .content-item.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .content-number {
-            font-size: 18px;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .content-text h3 {
-            font-size: clamp(24px, 3vw, 36px);
-            margin-bottom: 16px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }
-
-        .content-text p {
-            font-size: 18px;
-            color: #999;
-            line-height: 1.6;
-        }
-
-        .cta-section {
-            padding: 160px 0;
-            text-align: center;
-            position: relative;
-        }
-
-        .cta-title {
-            font-size: clamp(40px, 6vw, 72px);
-            font-weight: 700;
-            margin-bottom: 40px;
-            letter-spacing: -0.03em;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-
-        .cta-title.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .cta-button {
-            display: inline-block;
-            padding: 20px 48px;
-            background: #fff;
-            color: #000;
-            text-decoration: none;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 50px;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        .cta-button.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .cta-button:hover {
-            transform: scale(1.05) translateY(0);
-            box-shadow: 0 20px 60px rgba(255,255,255,0.2);
-        }
-
-        footer {
-            padding: 60px 0;
-            border-top: 1px solid #222;
-            text-align: center;
-            color: #666;
-            position: relative;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 24px;
-            }
-
-            .content-item {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .clients-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .section {
-                padding: 60px 0;
-            }
-
-            .hero {
-                padding: 80px 0 100px;
-            }
-        }
-
-        .content-item:nth-child(1) { transition-delay: 0.1s; }
-        .content-item:nth-child(2) { transition-delay: 0.2s; }
-        .content-item:nth-child(3) { transition-delay: 0.3s; }
-
-        .cta-title, .cta-button {
-            transition-delay: 0.4s;
-        }
-    </style>
 </head>
 <body>
-    <div class="canvas-container" id="canvas-container"></div>
-    
-    <div class="content">
-        <header>
-            <div class="logo-container">
-                <div class="hash-symbol">
-                    <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="10" y="35" width="100" height="12" fill="#fff"/>
-                        <rect x="10" y="73" width="100" height="12" fill="#fff"/>
-                        <rect x="35" y="10" width="12" height="100" fill="#fff"/>
-                        <rect x="73" y="10" width="12" height="100" fill="#fff"/>
-                    </svg>
-                </div>
-                <div class="brand-name">rehashed.work</div>
-                <div class="tagline">Decoding the chain, one bit at a time.</div>
+
+<div id="canvas-container"></div>
+
+<div class="dashboard-container">
+
+<div class="page-header">
+    <div class="header-title">machines cash dashboard</div>
+    <div class="header-subtitle">spend crypto, not cash</div>
+</div>
+
+<!-- Controls -->
+
+<div class="controls">
+    <div>
+        <label>Date Range</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="date" id="startDate" value="2025-01-01">
+            <input type="date" id="endDate" value="2025-01-30">
+        </div>
+    </div>
+    <div>
+        <label>Granularity</label>
+        <select id="granularity">
+            <option value="daily" selected>Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+        </select>
+    </div>
+    <button id="reload">Reload Data</button>
+</div>
+
+<!-- CHARTS -->
+
+<div class="chart-container">
+    <div class="chart-header">
+        <div class="chart-title">Active Users (30 Day)</div>
+    </div>
+    <svg id="chart-au"></svg>
+</div>
+
+<div class="chart-container">
+    <div class="chart-header">
+        <div class="chart-title">Gross Merchandise Volume</div>
+    </div>
+    <svg id="chart-gmv"></svg>
+</div>
+
+<div class="chart-container">
+    <div class="chart-header">
+        <div class="chart-title">Subscription Revenue</div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff6e6e;"></div>
+                <span>Pro</span>
             </div>
-        </header>
-
-        <!--section class="hero">
-            <div class="container">
-                <div class="hero-content">
-                    <h1 class="hero-title">Next-Gen Data Engineering<br>for Web3</h1>
-                    <p class="hero-desc">We build scalable blockchain data infrastructure that turns complex transactions into actionable insights.</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="container">
-                <div class="section-label">What We Build</div>
-                <div class="content-grid">
-                    <div class="content-item">
-                        <div class="content-number">01</div>
-                        <div class="content-text">
-                            <h3>High-Throughput Data Pipelines</h3>
-                            <p>Designing real-time event-driven ETL pipelines to ingest, process, and store blockchain data at scale, using cutting-edge technologies.</p>
-                        </div>
-                    </div>
-                    <div class="content-item">
-                        <div class="content-number">02</div>
-                        <div class="content-text">
-                            <h3>Blockchain Analytics Frameworks</h3>
-                            <p>Building custom analytics platforms to extract meaningful insights from on-chain data, enabling actionable intelligence for businesses.</p>
-                        </div>
-                    </div>
-                    <div class="content-item">
-                        <div class="content-number">03</div>
-                        <div class="content-text">
-                            <h3>Smart Contract Data Insights</h3>
-                            <p>Optimizing on-chain transaction analysis by providing deep insights into smart contract interactions, protocols, and ecosystems.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="cta-section">
-            <div class="container">
-                <h2 class="cta-title">Ready to Decode the Data?</h2>
-                <a href="mailto:hello@rehashed.work" class="cta-button">Get in Touch</a>
-            </div>
-        </section-->
-
-        <footer>
-            <div class="container">
-                <p>&copy; 2025 Rehashed LLC. All rights reserved.</p>
-            </<section id="dashboard" class="section">
-    <div class="container">
-        <div class="section-label">Dashboard</div>
-
-        <!-- Controls -->
-        <div id="dashboard-controls" style="
-            display:flex;
-            gap:20px;
-            margin-bottom:40px;
-            align-items:center;
-        ">
-            <div>
-                <label>Date Range:</label><br>
-                <input type="date" id="startDate">
-                <input type="date" id="endDate">
-            </div>
-
-            <div>
-                <label>Granularity:</label><br>
-                <select id="granularity">
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                </select>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffa54b;"></div>
+                <span>Hobby</span>
             </div>
         </div>
+    </div>
+    <svg id="chart-sub"></svg>
+</div>
 
-        <!-- Charts -->
-        <div id="charts-grid" style="
-            display:grid;
-            grid-template-columns:1fr;
-            gap:80px;
-        ">
-
-            <div class="chart-card">
-                <h2 class="chart-title">Active Users (30-day AU)</h2>
-                <svg id="chart-active-users" width="100%" height="320"></svg>
+<div class="chart-container">
+    <div class="chart-header">
+        <div class="chart-title">User Retention</div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2ecc71;"></div>
+                <span>30 Day</span>
             </div>
-
-            <div class="chart-card">
-                <h2 class="chart-title">Monthly Spending Volume</h2>
-                <svg id="chart-gmv" width="100%" height="320"></svg>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #1abc9c;"></div>
+                <span>90 Day</span>
             </div>
-
-            <div class="chart-card">
-                <h2 class="chart-title">Subscription Revenue (MRR)</h2>
-                <svg id="chart-subscription" width="100%" height="320"></svg>
-            </div>
-
-            <div class="chart-card">
-                <h2 class="chart-title">User Retention</h2>
-                <svg id="chart-retention" width="100%" height="320"></svg>
-            </div>
-
-            <div class="chart-card">
-                <h2 class="chart-title">Contribution Margin Per Active User</h2>
-                <svg id="chart-cmpau" width="100%" height="320"></svg>
-            </div>
-
         </div>
-
     </div>
-</section>
-        </footer>
+    <svg id="chart-ret"></svg>
+</div>
+
+<div class="chart-container">
+    <div class="chart-header">
+        <div class="chart-title">Contribution Margin per Active User</div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4c9cff;"></div>
+                <span>Revenue</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff7f7f;"></div>
+                <span>Costs</span>
+            </div>
+        </div>
     </div>
+    <svg id="chart-cmpau"></svg>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // Initialize Three.js scene
-        let scene, camera, renderer, meshGroup;
-        let meshes = [];
-        let mousePosition = new THREE.Vector2(0, 0);
-        let targetMousePosition = new THREE.Vector2(0, 0);
-        let scrollOffset = 0;
-        let time = 0;
+</div>
 
-        function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
+<div id="tooltip" class="tooltip"></div>
 
-            // Camera
-            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 2.2;
-
-            // Renderer
-            const container = document.getElementById('canvas-container');
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
-
-            // Create mesh group
-            meshGroup = new THREE.Group();
-            scene.add(meshGroup);
-
-            // Create ribbon-like meshes
-            const numRibbons = 120;
-            const ribbonHeight = 0.016666666666666666;
-
-            for (let i = 0; i < numRibbons; i++) {
-                const geometry = createRibbonGeometry();
-                const material = new THREE.MeshBasicMaterial({
-                    color: 0x444444,
-                    wireframe: true,
-                    transparent: true,
-                    opacity: 0.3
-                });
-
-                const mesh = new THREE.Mesh(geometry, material);
-                const yPos = ribbonHeight * i - 1;
-                mesh.position.set(0, yPos, 0);
-                mesh.userData.index = i;
-                
-                meshes.push(mesh);
-                meshGroup.add(mesh);
-            }
-
-            // Event listeners
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('scroll', onScroll);
-            window.addEventListener('resize', onResize);
-
-            // Start animation
-            animate();
-        }
-
-        function createRibbonGeometry() {
-            const geometry = new THREE.BufferGeometry();
-            const segments = 100;
-            const width = 4.4;
-            const height = 0.016666666666666666;
-
-            const vertices = [];
-            const indices = [];
-
-            // Create vertices
-            for (let i = 0; i <= segments; i++) {
-                const x = (i / segments - 0.5) * width;
-                vertices.push(x, -height / 2, 0);
-                vertices.push(x, height / 2, 0);
-            }
-
-            // Create indices
-            for (let i = 0; i < segments; i++) {
-                const a = i * 2;
-                const b = a + 1;
-                const c = a + 2;
-                const d = a + 3;
-
-                indices.push(a, c, b);
-                indices.push(b, c, d);
-            }
-
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            geometry.setIndex(indices);
-
-            return geometry;
-        }
-
-        function onMouseMove(event) {
-            targetMousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
-            targetMousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        }
-
-        function onScroll() {
-            scrollOffset = window.scrollY / window.innerHeight * 0.24;
-        }
-
-        function onResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            time += 0.01;
-
-            // Smooth mouse movement
-            mousePosition.x += (targetMousePosition.x - mousePosition.x) * 0.1;
-            mousePosition.y += (targetMousePosition.y - mousePosition.y) * 0.1;
-
-            // Update mesh group rotation
-            meshGroup.rotation.x = mousePosition.y * 0.3;
-            meshGroup.rotation.y = mousePosition.x * 0.3;
-            meshGroup.position.z = -(scrollOffset * 0.24);
-
-            // Animate individual meshes
-            meshes.forEach((mesh, index) => {
-                const geometry = mesh.geometry;
-                const positions = geometry.attributes.position.array;
-                
-                // Wave animation
-                for (let i = 0; i < positions.length; i += 3) {
-                    const x = positions[i];
-                    const originalY = i % 6 === 0 ? -0.008333333333333333 : 0.008333333333333333;
-                    
-                    positions[i + 2] = Math.sin(x * 2 + time + index * 0.1) * 0.05 * (1 + scrollOffset);
-                }
-                
-                geometry.attributes.position.needsUpdate = true;
-                
-                // Rotation based on scroll
-                mesh.rotation.y = -(scrollOffset * index * 0.043);
-                mesh.rotation.x = -(scrollOffset * index * 0.043) * 0.3;
-
-                // Fade based on distance
-                const distanceFromCenter = Math.abs(mesh.position.y + scrollOffset * 0.24);
-                mesh.material.opacity = Math.max(0.1, 0.5 - distanceFromCenter * 0.3);
-            });
-
-            renderer.render(scene, camera);
-        }
-
-        // Intersection Observer for scroll animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, observerOptions);
-
-        // Observe all animated elements
-        document.addEventListener('DOMContentLoaded', () => {
-            init();
-            
-            document.querySelectorAll('.content-item, .cta-title, .cta-button').forEach(el => {
-                observer.observe(el);
-            });
-        });
-    </<script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
-/* ---------------------------------------------
-   1. Mock Data (replace with Parquet loader)
-----------------------------------------------*/
-function loadData() {
-    const days = 60;
-    let arr = [];
-
-    for (let i = 0; i < days; i++) {
-        let d = new Date(2025, 0, 1 + i);
-
-        arr.push({
-            date: d,
-            active_users_30d: 1000 + Math.random()*3000,
-            spending_volume: 50000 + Math.random()*150000,
-
-            sub_pro: 2000 + Math.random()*2000,
-            sub_hobby: 1000 + Math.random()*1000,
-
-            retention_30: 0.5 + Math.random()*0.3,
-            retention_90: 0.3 + Math.random()*0.3,
-
-            cmpau_kyc: 2 + Math.random()*3,
-            cmpau_processing: 1 + Math.random()*4,
-            cmpau_issuance: 1 + Math.random()*3,
-        });
-    }
-
-    return arr;
-}
-
-let DATA = loadData();
-
-/* ---------------------------------------------
-   2. Global Helpers
-----------------------------------------------*/
-const parseDate = d3.timeParse("%Y-%m-%d");
-
-function filterData() {
-    const start = new Date(startDate.value);
-    const end = new Date(endDate.value);
-
-    return DATA.filter(d => d.date >= start && d.date <= end);
-}
-
-function weekly(arr) {
-    return d3.groups(arr, d => d3.timeWeek.floor(d.date))
-        .map(([week, values]) => ({
-            date: week,
-            active_users_30d: d3.mean(values, v => v.active_users_30d),
-            spending_volume: d3.sum(values, v => v.spending_volume),
-            sub_pro: d3.sum(values, v => v.sub_pro),
-            sub_hobby: d3.sum(values, v => v.sub_hobby),
-            retention_30: d3.mean(values, v => v.retention_30),
-            retention_90: d3.mean(values, v => v.retention_90),
-            cmpau_kyc: d3.mean(values, v => v.cmpau_kyc),
-            cmpau_processing: d3.mean(values, v => v.cmpau_processing),
-            cmpau_issuance: d3.mean(values, v => v.cmpau_issuance),
-        }));
-}
-
-function monthly(arr) {
-    return d3.groups(arr, d => d3.timeMonth.floor(d.date))
-        .map(([month, values]) => ({
-            date: month,
-            active_users_30d: d3.mean(values, v => v.active_users_30d),
-            spending_volume: d3.sum(values, v => v.spending_volume),
-            sub_pro: d3.sum(values, v => v.sub_pro),
-            sub_hobby: d3.sum(values, v => v.sub_hobby),
-            retention_30: d3.mean(values, v => v.retention_30),
-            retention_90: d3.mean(values, v => v.retention_90),
-            cmpau_kyc: d3.mean(values, v => v.cmpau_kyc),
-            cmpau_processing: d3.mean(values, v => v.cmpau_processing),
-            cmpau_issuance: d3.mean(values, v => v.cmpau_issuance),
-        }));
-}
-
-/* ---------------------------------------------
-   3. Tooltip
-----------------------------------------------*/
-const tooltip = d3.select("body")
-    .append("div")
-    .style("position","fixed")
-    .style("padding","8px 12px")
-    .style("background","rgba(0,0,0,0.8)")
-    .style("border","1px solid #555")
-    .style("color","#fff")
-    .style("border-radius","6px")
-    .style("pointer-events","none")
-    .style("opacity",0);
-
-/* ---------------------------------------------
-   4. Draw Charts (one function per chart)
-----------------------------------------------*/
-function render() {
-    let arr = filterData();
-
-    if (granularity.value === "weekly") arr = weekly(arr);
-    if (granularity.value === "monthly") arr = monthly(arr);
-
-    drawActiveUsers(arr);
-    drawGMV(arr);
-    drawSubscription(arr);
-    drawRetention(arr);
-    drawCMPAU(arr);
-}
-
-/* ---- ACTIVE USERS (Area) ---- */
-function drawActiveUsers(data) {
-    const svg = d3.select("#chart-active-users");
-    svg.selectAll("*").remove();
-
-    const width = svg.node().clientWidth;
-    const height = svg.node().clientHeight;
-    const margin = {top:20,right:40,bottom:40,left:60};
-
-    const x = d3.scaleTime()
-        .domain(d3.extent(data, d => d.date))
-        .range([margin.left, width-margin.right]);
-
-    const y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.active_users_30d)]).nice()
-        .range([height-margin.bottom, margin.top]);
-
-    const gradient = svg.append("defs")
-        .append("linearGradient")
-        .attr("id","gradAU")
-        .attr("x1","0").attr("x2","0").attr("y1","0").attr("y2","1");
-
-    gradient.append("stop").attr("offset","0%").attr("stop-color","#5ef0ff").attr("stop-opacity",0.9);
-    gradient.append("stop").attr("offset","100%").attr("stop-color","#5ef0ff").attr("stop-opacity",0);
-
-    svg.append("path")
-        .datum(data)
-        .attr("fill","url(#gradAU)")
-        .attr("stroke","#5ef0ff")
-        .attr("stroke-width",2)
-        .attr("d",
-            d3.area()
-                .x(d => x(d.date))
-                .y0(y(0))
-                .y1(d => y(d.active_users_30d))
-        );
-
-    svg.append("g").attr("transform",`translate(0,${height-margin.bottom})`).call(d3.axisBottom(x).tickSize(0).ticks(6));
-    svg.append("g").attr("transform",`translate(${margin.left},0)`).call(d3.axisLeft(y).ticks(5));
-}
-
-/* ---- GMV (Bar) ---- */
-function drawGMV(data) {
-    const svg = d3.select("#chart-gmv");
-    svg.selectAll("*").remove();
-
-    const width = svg.node().clientWidth;
-    const height = svg.node().clientHeight;
-    const margin = {top:20,right:30,bottom:40,left:60};
-
-    const x = d3.scaleBand()
-        .domain(data.map(d=>d.date))
-        .range([margin.left,width-margin.right])
-        .padding(0.2);
-
-    const y = d3.scaleLinear()
-        .domain([0,d3.max(data,d=>d.spending_volume)]).nice()
-        .range([height-margin.bottom,margin.top]);
-
-    svg.selectAll("rect")
-        .data(data)
-        .enter()
-        .append("rect")
-        .attr("x",d=>x(d.date))
-        .attr("width",x.bandwidth())
-        .attr("y",d=>y(d.spending_volume))
-        .attr("height",d=>y(0)-y(d.spending_volume))
-        .attr("fill","#bb86fc")
-        .on("mousemove",(evt,d)=>{
-            tooltip.html(`GMV: $${d.spending_volume.toFixed(0)}`)
-                .style("left",evt.clientX+15+"px")
-                .style("top",evt.clientY+15+"px")
-                .style("opacity",1);
-        })
-        .on("mouseout",()=>tooltip.style("opacity",0));
-
-    svg.append("g").attr("transform",`translate(0,${height-margin.bottom})`).call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")).ticks(6));
-    svg.append("g").attr("transform",`translate(${margin.left},0)`).call(d3.axisLeft(y));
-}
-
-/* ---- Subscription (Stacked: pro + hobby) ---- */
-function drawSubscription(data) {
-    const svg = d3.select("#chart-subscription");
-    svg.selectAll("*").remove();
-
-    const width = svg.node().clientWidth;
-    const height = svg.node().clientHeight;
-    const margin = {top:20,right:40,bottom:40,left:60};
-
-    const keys = ["sub_pro","sub_hobby"];
-
-    const stacked = d3.stack().keys(keys)(data);
-
-    const x = d3.scaleBand()
-        .domain(data.map(d=>d.date))
-        .range([margin.left,width-margin.right])
-        .padding(0.2);
-
-    const y = d3.scaleLinear()
-        .domain([0, d3.max(data, d=>d.sub_pro+d.sub_hobby)]).range([height-margin.bottom,margin.top]);
-
-    const color = d3.scaleOrdinal()
-        .domain(keys)
-        .range(["#6a5acd","#00c7b7"]);
-
-    svg.selectAll("g.layer")
-        .data(stacked)
-        .enter().append("g")
-        .attr("fill", d => color(d.key))
-        .selectAll("rect")
-        .data(d=>d)
-        .enter().append("rect")
-        .attr("x",d=>x(d.data.date))
-        .attr("y",d=>y(d[1]))
-        .attr("height",d=>y(d[0]) - y(d[1]))
-        .attr("width",x.bandwidth())
-        .on("mousemove",(evt,d)=>{
-            tooltip.html(`Pro: $${d.data.sub_pro.toFixed(0)}<br>Hobby: $${d.data.sub_hobby.toFixed(0)}`)
-                .style("left",evt.clientX+15+"px")
-                .style("top",evt.clientY+15+"px")
-                .style("opacity",1);
-        })
-        .on("mouseout",()=>tooltip.style("opacity",0));
-
-    /* Legend */
-    const legend = svg.append("g").attr("transform","translate(20,10)");
-    legend.selectAll("rect")
-        .data(keys).enter()
-        .append("rect")
-        .attr("x",0).attr("y",(d,i)=>i*20)
-        .attr("width",12).attr("height",12)
-        .attr("fill",d=>color(d));
-    legend.selectAll("text")
-        .data(keys).enter()
-        .append("text")
-        .attr("x",20).attr("y",(d,i)=>i*20+10)
-        .text(d=>d.replace("sub_",""))
-        .style("font-size","12px");
-
-    svg.append("g").attr("transform",`translate(0,${height-margin.bottom})`).call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
-    svg.append("g").attr("transform",`translate(${margin.left},0)`).call(d3.axisLeft(y));
-}
-
-/* ---- Retention (Line 30d + 90d) ---- */
-function drawRetention(data) {
-    const svg = d3.select("#chart-retention");
-    svg.selectAll("*").remove();
-
-    const width = svg.node().clientWidth;
-    const height = svg.node().clientHeight;
-    const margin = {top:20,right:40,bottom:40,left:60};
-
-    const x = d3.scaleTime()
-        .domain(d3.extent(data,d=>d.date))
-        .range([margin.left,width-margin.right]);
-
-    const y = d3.scaleLinear()
-        .domain([0,1]).range([height-margin.bottom,margin.top]);
-
-    const line30 = d3.line().x(d=>x(d.date)).y(d=>y(d.retention_30)).curve(d3.curveCardinal);
-    const line90 = d3.line().x(d=>x(d.date)).y(d=>y(d.retention_90)).curve(d3.curveCardinal);
-
-    svg.append("path").datum(data)
-        .attr("stroke","#00eaff")
-        .attr("stroke-width",2)
-        .attr("fill","none")
-        .attr("d",line30);
-
-    svg.append("path").datum(data)
-        .attr("stroke","#ff7bf2")
-        .attr("stroke-width",2)
-        .attr("fill","none")
-        .attr("d",line90);
-
-    svg.append("g").attr("transform",`translate(0,${height-margin.bottom})`).call(d3.axisBottom(x).ticks(6));
-    svg.append("g").attr("transform",`translate(${margin.left},0)`).call(d3.axisLeft(y));
-
-    /* Legend */
-    const legend = svg.append("g").attr("transform","translate(20,10)");
-    const items=[["30d","#00eaff"],["90d","#ff7bf2"]];
-
-    items.forEach((item,i)=>{
-        legend.append("rect")
-            .attr("x",0).attr("y",i*20).attr("width",12).attr("height",12).attr("fill",item[1]);
-        legend.append("text")
-            .attr("x",20).attr("y",i*20+10)
-            .text(item[0])
-            .style("font-size","12px");
-    });
-}
-
-/* ---- CMPAU (Stacked costs) ---- */
-function drawCMPAU(data) {
-    const svg = d3.select("#chart-cmpau");
-    svg.selectAll("*").remove();
-
-    const width = svg.node().clientWidth;
-    const height = svg.node().clientHeight;
-    const margin = {top:20,right:40,bottom:40,left:60};
-
-    const keys = ["cmpau_kyc","cmpau_issuance","cmpau_processing"];
-
-    const stacked = d3.stack().keys(keys)(data);
-
-    const x = d3.scaleBand()
-        .domain(data.map(d=>d.date))
-        .range([margin.left,width-margin.right])
-        .padding(0.25);
-
-    const y = d3.scaleLinear()
-        .domain([0,d3.max(data,d=>d.cmpau_kyc + d.cmpau_issuance + d.cmpau_processing)])
-        .range([height-margin.bottom,margin.top]);
-
-    const color = d3.scaleOrdinal()
-        .domain(keys)
-        .range(["#4dd0e1","#9575cd","#ffab91"]);
-
-    svg.selectAll("g.layer")
-        .data(stacked)
-        .enter().append("g")
-        .attr("fill", d => color(d.key))
-        .selectAll("rect")
-        .data(d=>d)
-        .enter().append("rect")
-        .attr("x",d=>x(d.data.date))
-        .attr("y",d=>y(d[1]))
-        .attr("height",d=>y(d[0]) - y(d[1]))
-        .attr("width",x.bandwidth());
-
-    /* Legend */
-    const legend = svg.append("g").attr("transform","translate(20,10)");
-    keys.forEach((k,i)=>{
-        legend.append("rect").attr("x",0).attr("y",i*20).attr("width",12).attr("height",12).attr("fill",color(k));
-        legend.append("text").attr("x",20).attr("y",i*20+10).text(k.replace("cmpau_","")).style("font-size","12px");
-    });
-
-    svg.append("g").attr("transform",`translate(0,${height-margin.bottom})`).call(d3.axisBottom(x).tickFormat(d3.timeFormat("%b %d")));
-    svg.append("g").attr("transform",`translate(${margin.left},0)`).call(d3.axisLeft(y));
-}
-
-/* ---------------------------------------------
-   5. Initialize Controls
-----------------------------------------------*/
-document.addEventListener("DOMContentLoaded", () => {
-    startDate.value = DATA[0].date.toISOString().slice(0,10);
-    endDate.value = DATA[DATA.length-1].date.toISOString().slice(0,10);
-
-    startDate.onchange = render;
-    endDate.onchange = render;
-    granularity.onchange = render;
-
-    render();
-});
-</script>
+// ------------------------------------------------------
+// THREE.JS BACKGROUND ANIMATION (from rehashed.work)
+// ------------------------------------------------------
+(function() {
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 1);
+    container.appendChild(renderer.domElement);
+    
+    camera.position.z = 5;
+    
+    // Create particles
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = 5000;
+    const posArray = new Float32Array(particlesCount * 3);
+    
+    for(let i = 0; i < particlesCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 10;
+    }
+    
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    
+    const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.005,
+        color: 0x667eea,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending
+    });
+    
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
+    
+    // Mouse interaction
+    let mouseX = 0;
+    let mouseY = 0;
+    
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX / window.innerWidth - 0.5;
+        mouseY = e.clientY / window.innerHeight - 0.5;
+    });
+    
+    // Animation
+    let frame = 0;
+    function animate() {
+        requestAnimationFrame(animate);
+        frame += 0.001;
+        
+        particlesMesh.rotation.y = frame + mouseX * 0.5;
+        particlesMesh.rotation.x = frame * 0.5 + mouseY * 0.5;
+        
+        // Animate particles
+        const positions = particlesMesh.geometry.attributes.position.array;
+        for(let i = 0; i < positions.length; i += 3) {
+            positions[i + 1] = Math.sin(frame + positions[i]) * 0.5;
+        }
+        particlesMesh.geometry.attributes.position.needsUpdate = true;
+        
+        renderer.render(scene, camera);
+    }
+    
+    animate();
+    
+    // Resize handler
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+})();
+
+// ------------------------------------------------------
+// MOCK DATA GENERATION - regenerates based on date range
+// ------------------------------------------------------
+function generateMockData(startDate, endDate) {
+    const mockData = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    let currentDate = new Date(start);
+    
+    while (currentDate <= end) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        const pro = Math.random() * 9000 + 3000;
+        const hobby = Math.random() * 4000 + 1000;
+
+        mockData.push({
+            date: dateStr,
+            active_users_30d: Math.floor(Math.random() * 3000 + 1500),
+            spending_volume: Math.random() * 150000 + 50000,
+            subscription_pro: pro,
+            subscription_hobby: hobby,
+            retention_30: 0.4 + Math.random() * 0.5,
+            retention_90: 0.2 + Math.random() * 0.4,
+            cmpau_revenue: Math.random() * 30 + 10,
+            cmpau_costs: Math.random() * 12 + 4
+        });
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return mockData;
+}
+
+// ------------------------------------------------------
+// Helpers
+// ------------------------------------------------------
+function resample(data, gran) {
+  if (gran === "daily") return data;
+
+  const keyFn = {
+    weekly: d => d.date.slice(0, 7) + "-W" + Math.floor(new Date(d.date).getDate()/7),
+    monthly: d => d.date.slice(0, 7)
+  }[gran];
+
+  const grouped = d3.group(data, keyFn);
+  const out = [];
+
+  for (const [k, rows] of grouped) {
+    out.push({
+      date: k,
+      active_users_30d: d3.max(rows, r => r.active_users_30d),
+      spending_volume: d3.sum(rows, r => r.spending_volume),
+      subscription_pro: d3.sum(rows, r => r.subscription_pro),
+      subscription_hobby: d3.sum(rows, r => r.subscription_hobby),
+      retention_30: d3.mean(rows, r => r.retention_30),
+      retention_90: d3.mean(rows, r => r.retention_90),
+      cmpau_revenue: d3.sum(rows, r => r.cmpau_revenue),
+      cmpau_costs: d3.sum(rows, r => r.cmpau_costs)
+    });
+  }
+
+  return out;
+}
+
+const tooltip = d3.select("#tooltip");
+
+function showTooltip(content, x, y) {
+  tooltip.html(content)
+         .style("left", (x + 15) + "px")
+         .style("top", (y - 10) + "px")
+         .style("opacity", 1);
+}
+function hideTooltip() { tooltip.style("opacity", 0); }
+
+// ------------------------------------------------------
+// ACTIVE USERS — AREA CHART
+// ------------------------------------------------------
+function chartActiveUsers(svgId, data) {
+  const svg = d3.select(svgId);
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const M = {t:20,r:20,b:40,l:50};
+
+  const x = d3.scaleBand().domain(data.map(d => d.date)).range([M.l, w-M.r]).padding(0.1);
+  const y = d3.scaleLinear().domain([0, d3.max(data, d => d.active_users_30d)]).nice()
+              .range([h-M.b, M.t]);
+
+  // gradient
+  const defs = svg.append("defs");
+  const gradient = defs.append("linearGradient")
+    .attr("id","areaGrad")
+    .attr("x1","0").attr("y1","0")
+    .attr("x2","0").attr("y2","1");
+  gradient.append("stop").attr("offset","0%").attr("stop-color","#4e8cff80");
+  gradient.append("stop").attr("offset","100%").attr("stop-color","#4e8cff05");
+
+  const line = d3.line()
+     .x(d => x(d.date) + x.bandwidth()/2)
+     .y(d => y(d.active_users_30d))
+     .curve(d3.curveMonotoneX);
+
+  const area = d3.area()
+     .x(d => x(d.date) + x.bandwidth()/2)
+     .y0(h-M.b)
+     .y1(d => y(d.active_users_30d))
+     .curve(d3.curveMonotoneX);
+
+  svg.append("path").datum(data)
+     .attr("fill","url(#areaGrad)")
+     .attr("d",area);
+
+  svg.append("path").datum(data)
+     .attr("fill","none")
+     .attr("stroke","#4e8cff")
+     .attr("stroke-width",3)
+     .attr("d",line);
+
+  // dots with tooltip
+  svg.selectAll("circle")
+     .data(data)
+     .enter().append("circle")
+     .attr("cx", d => x(d.date)+x.bandwidth()/2)
+     .attr("cy", d => y(d.active_users_30d))
+     .attr("r",4)
+     .attr("fill","#4e8cff")
+     .on("mousemove",(e,d)=>{
+        showTooltip(`Active Users: <b>${d.active_users_30d}</b><br>${d.date}`, e.pageX, e.pageY);
+     })
+     .on("mouseout", hideTooltip);
+
+  // axes
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(0,${h-M.b})`)
+     .call(d3.axisBottom(x).tickValues(x.domain().filter((d,i)=>!(i%Math.ceil(data.length/8)))));
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(${M.l},0)`)
+     .call(d3.axisLeft(y));
+}
+
+// ------------------------------------------------------
+// GMV — BAR CHART
+// ------------------------------------------------------
+function chartGMV(svgId, data) {
+  const svg = d3.select(svgId);
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const M = {t:20,r:20,b:40,l:60};
+
+  const x = d3.scaleBand().domain(data.map(d => d.date)).range([M.l, w-M.r]).padding(0.15);
+  const y = d3.scaleLinear().domain([0, d3.max(data, d => d.spending_volume)]).nice()
+              .range([h-M.b, M.t]);
+
+  svg.selectAll("rect")
+     .data(data)
+     .enter().append("rect")
+     .attr("x", d => x(d.date))
+     .attr("y", d => y(d.spending_volume))
+     .attr("width", x.bandwidth())
+     .attr("height", d => h-M.b - y(d.spending_volume))
+     .attr("fill","#7d5eff")
+     .on("mousemove", (e,d)=> {
+        showTooltip(`GMV: <b>$${d.spending_volume.toLocaleString()}</b><br>${d.date}`, e.pageX, e.pageY);
+     })
+     .on("mouseout", hideTooltip);
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(0,${h-M.b})`)
+     .call(d3.axisBottom(x).tickValues(x.domain().filter((d,i)=>!(i%Math.ceil(data.length/8)))));
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(${M.l},0)`)
+     .call(d3.axisLeft(y).tickFormat(d => "$" + d3.format(",.0f")(d)));
+}
+
+// ------------------------------------------------------
+// SUBSCRIPTION — STACKED BAR
+// ------------------------------------------------------
+function chartSubs(svgId, data) {
+  const svg = d3.select(svgId);
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const M = {t:20,r:20,b:40,l:60};
+
+  const keys = ["subscription_pro","subscription_hobby"];
+
+  const x = d3.scaleBand().domain(data.map(d => d.date)).range([M.l, w-M.r]).padding(0.15);
+  const y = d3.scaleLinear()
+              .domain([0, d3.max(data, d => d.subscription_pro + d.subscription_hobby)]).nice()
+              .range([h-M.b, M.t]);
+
+  const colors = d3.scaleOrdinal()
+      .domain(keys)
+      .range(["#ff6e6e","#ffa54b"]);
+
+  const stacked = d3.stack().keys(keys)(data);
+
+  svg.selectAll("g.series")
+     .data(stacked)
+     .enter().append("g")
+     .attr("fill", d => colors(d.key))
+     .selectAll("rect")
+     .data(d => d)
+     .enter().append("rect")
+     .attr("x", d => x(d.data.date))
+     .attr("y", d => y(d[1]))
+     .attr("height", d => y(d[0]) - y(d[1]))
+     .attr("width", x.bandwidth())
+     .on("mousemove",(e,d)=>{
+        const total = d.data.subscription_pro + d.data.subscription_hobby;
+        showTooltip(`
+          <b>${d.data.date}</b><br>
+          Pro: $${d.data.subscription_pro.toFixed(0)}<br>
+          Hobby: $${d.data.subscription_hobby.toFixed(0)}<br>
+          <b>Total: $${total.toFixed(0)}</b>
+        `, e.pageX, e.pageY);
+     })
+     .on("mouseout", hideTooltip);
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(0,${h-M.b})`)
+     .call(d3.axisBottom(x).tickValues(x.domain().filter((d,i)=>!(i%Math.ceil(data.length/8)))));
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(${M.l},0)`)
+     .call(d3.axisLeft(y));
+}
+
+// ------------------------------------------------------
+// RETENTION — SMOOTH LINE (S-CURVE STYLE)
+// ------------------------------------------------------
+function chartRetention(svgId, data) {
+  const svg = d3.select(svgId);
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const M = {t:20,r:20,b:40,l:50};
+
+  const x = d3.scaleBand().domain(data.map(d => d.date)).range([M.l, w-M.r]).padding(0.1);
+  const y = d3.scaleLinear().domain([0,1]).range([h-M.b, M.t]);
+
+  const line30 = d3.line()
+    .x(d => x(d.date)+x.bandwidth()/2)
+    .y(d => y(d.retention_30))
+    .curve(d3.curveMonotoneX);
+
+  const line90 = d3.line()
+    .x(d => x(d.date)+x.bandwidth()/2)
+    .y(d => y(d.retention_90))
+    .curve(d3.curveMonotoneX);
+
+  svg.append("path").datum(data)
+    .attr("d", line30)
+    .attr("stroke", "#2ecc71")
+    .attr("stroke-width", 3)
+    .attr("fill", "none");
+
+  svg.append("path").datum(data)
+    .attr("d", line90)
+    .attr("stroke", "#1abc9c")
+    .attr("stroke-width", 3)
+    .attr("fill", "none");
+
+  svg.selectAll("circle.r30")
+    .data(data)
+    .enter().append("circle")
+    .attr("class","r30")
+    .attr("cx", d => x(d.date)+x.bandwidth()/2)
+    .attr("cy", d => y(d.retention_30))
+    .attr("r",4)
+    .attr("fill","#2ecc71")
+    .on("mousemove",(e,d)=>{
+       showTooltip(`30d retention: <b>${(d.retention_30*100).toFixed(1)}%</b>`, e.pageX, e.pageY);
+    })
+    .on("mouseout", hideTooltip);
+
+  svg.selectAll("circle.r90")
+    .data(data)
+    .enter().append("circle")
+    .attr("class","r90")
+    .attr("cx", d => x(d.date)+x.bandwidth()/2)
+    .attr("cy", d => y(d.retention_90))
+    .attr("r",4)
+    .attr("fill","#1abc9c")
+    .on("mousemove",(e,d)=>{
+       showTooltip(`90d retention: <b>${(d.retention_90*100).toFixed(1)}%</b>`, e.pageX, e.pageY);
+    })
+    .on("mouseout", hideTooltip);
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(0,${h-M.b})`)
+     .call(d3.axisBottom(x).tickValues(x.domain().filter((d,i)=>!(i%Math.ceil(data.length/8)))));
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(${M.l},0)`)
+     .call(d3.axisLeft(y).tickFormat(d=> (d*100)+"%"));
+}
+
+// ------------------------------------------------------
+// CONTRIBUTION MARGIN — STACKED BAR
+// ------------------------------------------------------
+function chartCMPAU(svgId, data) {
+  const svg = d3.select(svgId);
+  svg.selectAll("*").remove();
+
+  const w = svg.node().clientWidth;
+  const h = svg.node().clientHeight;
+  const M = {t:20,r:20,b:40,l:60};
+
+  const keys = ["cmpau_revenue","cmpau_costs"];
+
+  const x = d3.scaleBand().domain(data.map(d => d.date)).range([M.l, w-M.r]).padding(0.15);
+  const y = d3.scaleLinear()
+              .domain([0, d3.max(data, d => d.cmpau_revenue + d.cmpau_costs)]).nice()
+              .range([h-M.b, M.t]);
+
+  const colors = d3.scaleOrdinal().domain(keys).range(["#4c9cff","#ff7f7f"]);
+
+  const stacked = d3.stack().keys(keys)(data);
+
+  svg.selectAll("g.series")
+     .data(stacked)
+     .enter().append("g")
+     .attr("fill", d => colors(d.key))
+     .selectAll("rect")
+     .data(d => d)
+     .enter().append("rect")
+     .attr("x", d => x(d.data.date))
+     .attr("y", d => y(d[1]))
+     .attr("height", d => y(d[0]) - y(d[1]))
+     .attr("width", x.bandwidth())
+     .on("mousemove",(e,d)=>{
+        showTooltip(`
+          <b>${d.data.date}</b><br>
+          Revenue: $${d.data.cmpau_revenue.toFixed(1)}<br>
+          Costs: $${d.data.cmpau_costs.toFixed(1)}<br>
+          <b>Margin: ${(d.data.cmpau_revenue-d.data.cmpau_costs).toFixed(1)}</b>
+        `, e.pageX, e.pageY);
+     })
+     .on("mouseout", hideTooltip);
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(0,${h-M.b})`)
+     .call(d3.axisBottom(x).tickValues(x.domain().filter((d,i)=>!(i%Math.ceil(data.length/8)))));
+
+  svg.append("g")
+     .attr("class", "axis")
+     .attr("transform",`translate(${M.l},0)`)
+     .call(d3.axisLeft(y));
+}
+
+// ------------------------------------------------------
+// Render the full dashboard
+// ------------------------------------------------------
+function render() {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  const gran = document.getElementById("granularity").value;
+
+  const mockData = generateMockData(start, end);
+  const data = resample(mockData, gran);
+
+  chartActiveUsers("#chart-au", data);
+  chartGMV("#chart-gmv", data);
+  chartSubs("#chart-sub", data);
+  chartRetention("#chart-ret", data);
+  chartCMPAU("#chart-cmpau", data);
+}
+
+document.getElementById("reload").onclick = render;
+render();
+
+</script>
+
 </body>
 </html>
