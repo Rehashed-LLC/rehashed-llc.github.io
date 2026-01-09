@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machines fees received</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Space Mono', monospace;
+            background: #000;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: left;
+            margin-bottom: 30px;
+            color: #ff6600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+            font-weight: 700;
+            border-bottom: 2px solid #ff6600;
+            padding-bottom: 10px;
+        }
+        .input-section {
+            background: #111;
+            padding: 20px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            background: #000;
+            color: #fff;
+            font-size: 12px;
+            font-family: 'Space Mono', monospace;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ff6600;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #ff6600;
+            color: #000;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+        }
+        button:hover {
+            background: #ff8533;
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .results {
+            background: #111;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        .stat-card {
+            background: #000;
+            border: 1px solid #ff6600;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .stat-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ff6600;
+        }
+        .stat-sub {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+        }
+        .tx-list {
+            margin-top: 20px;
+        }
+        .tx-list h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .tx-item {
+            background: #000;
+            border: 1px solid #333;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+        .tx-hash {
+            color: #ff6600;
+            word-break: break-all;
+        }
+        .tx-amount {
+            color: #ff6600;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .error {
+            background: #000;
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Machines fees received</h1>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label>Wallet Address</label>
+                <input type="text" id="address" value="0x72756F239D3fb5041FF9cE821edc530Bb04Ae42a">
+            </div>
+            <div style="font-size:10px; color:#666; margin-bottom:10px;">
+                FROM: 0x3f0728d11Aed94E166272dab266B6b617E94d6fC
+            </div>
+            <button id="fetchBtn" onclick="fetchTransactions()">Fetch Received ETH</button>
+        </div>
+
+        <div id="results" class="results" style="display:none;"></div>
+    </div>
+
+    <script>
+        const SENDER_ADDRESS = '0x3f0728d11aed94e166272dab266b6b617e94d6fc';
+        let ethPrice = 0;
+
+        async function getEthPrice() {
+            const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT');
+            const data = await res.json();
+            ethPrice = parseFloat(data.price);
+            return ethPrice;
+        }
+
+        function getTimestamps() {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+            const twoDaysAgoStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2);
+            return {
+                todayTs: Math.floor(todayStart.getTime() / 1000),
+                yesterdayTs: Math.floor(yesterdayStart.getTime() / 1000),
+                twoDaysAgoTs: Math.floor(twoDaysAgoStart.getTime() / 1000)
+            };
+        }
+
+        async function getEthBalance(address) {
+            const res = await fetch('https://mainnet.base.org', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'eth_getBalance',
+                    params: [address, 'latest']
+                })
+            });
+            const data = await res.json();
+            console.log('Balance RPC response:', data, 'for address:', address);
+            if (data.result) {
+                const balance = parseInt(data.result, 16) / 1e18;
+                console.log('Parsed balance:', balance, 'ETH');
+                return balance;
+            }
+            return 0;
+        }
+
+        async function fetchFromRoutescan(address) {
+            // Routescan API for Base internal transactions
+            const url = `https://api.routescan.io/v2/network/mainnet/evm/8453/etherscan/api?module=account&action=txlistinternal&address=${address}&sort=desc`;
+            const res = await fetch(url);
+            const data = await res.json();
+            console.log('Routescan response:', data.status, data.message, 'count:', data.result?.length);
+            return data;
+        }
+
+        async function fetchTransactions() {
+            const address = document.getElementById('address').value.trim().toLowerCase();
+            const resultsDiv = document.getElementById('results');
+            const btn = document.getElementById('fetchBtn');
+
+            if (!address || !address.startsWith('0x') || address.length !== 42) {
+                resultsDiv.innerHTML = '<div class="error">Please enter a valid Ethereum address</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">Fetching data...</div>';
+
+            try {
+                await getEthPrice();
+                const { todayTs, yesterdayTs, twoDaysAgoTs } = getTimestamps();
+                const ethBalance = await getEthBalance(address);
+
+                let txList = [];
+
+                // Try Routescan first (better indexing than Blockscout)
+                resultsDiv.innerHTML = '<div class="loading">Fetching via Routescan...</div>';
+
+                const data = await fetchFromRoutescan(address);
+
+                if (data.status === '1' && data.result) {
+                    for (const tx of data.result) {
+                        const txFrom = (tx.from || '').toLowerCase();
+                        const txTo = (tx.to || '').toLowerCase();
+
+                        if (txFrom === SENDER_ADDRESS && txTo === address && tx.value && tx.value !== '0') {
+                            txList.push({
+                                hash: tx.hash || tx.transactionHash,
+                                value: tx.value,
+                                timeStamp: parseInt(tx.timeStamp)
+                            });
+                            console.log('Found tx:', (tx.hash || tx.transactionHash)?.slice(0, 20), 'value:', tx.value, 'ts:', tx.timeStamp);
+                        }
+                    }
+                } else {
+                    console.log('Routescan failed, trying Blockscout...');
+                    resultsDiv.innerHTML = '<div class="loading">Trying Blockscout...</div>';
+
+                    // Fallback to Blockscout
+                    const bsRes = await fetch(`https://base.blockscout.com/api/v2/addresses/${address}/internal-transactions`);
+                    const bsData = await bsRes.json();
+
+                    if (bsData.items) {
+                        for (const tx of bsData.items) {
+                            const txFrom = (tx.from?.hash || '').toLowerCase();
+                            const txTo = (tx.to?.hash || '').toLowerCase();
+
+                            if (txFrom === SENDER_ADDRESS && txTo === address && tx.value && tx.value !== '0') {
+                                txList.push({
+                                    hash: tx.transaction_hash,
+                                    value: tx.value,
+                                    timeStamp: tx.timestamp ? Math.floor(new Date(tx.timestamp).getTime() / 1000) : 0
+                                });
+                            }
+                        }
+                    }
+                }
+
+                console.log('Found txList:', txList.length);
+
+                // Process transactions
+                let todayReceived = 0;
+                let yesterdayReceived = 0;
+                let twoDaysAgoReceived = 0;
+
+                const allTxs = txList.map(tx => {
+                    const value = parseFloat(tx.value) / 1e18;
+
+                    if (tx.timeStamp >= todayTs) {
+                        todayReceived += value;
+                    } else if (tx.timeStamp >= yesterdayTs) {
+                        yesterdayReceived += value;
+                    } else if (tx.timeStamp >= twoDaysAgoTs) {
+                        twoDaysAgoReceived += value;
+                    }
+
+                    return {
+                        hash: tx.hash,
+                        from: tx.from,
+                        value: value,
+                        timestamp: tx.timeStamp
+                    };
+                });
+
+                // Sort by timestamp descending
+                allTxs.sort((a, b) => b.timestamp - a.timestamp);
+
+                // Calculate % change from 2 days ago to yesterday
+                let pctChange = 0;
+                let pctChangeStr = '';
+                if (twoDaysAgoReceived > 0) {
+                    pctChange = ((yesterdayReceived - twoDaysAgoReceived) / twoDaysAgoReceived) * 100;
+                    const sign = pctChange >= 0 ? '+' : '';
+                    pctChangeStr = `${sign}${pctChange.toFixed(1)}%`;
+                } else if (yesterdayReceived > 0) {
+                    pctChangeStr = '+∞%';
+                } else {
+                    pctChangeStr = '0%';
+                }
+                const pctColor = pctChange >= 0 ? '#00ff00' : '#ff3333';
+
+                console.log('todayReceived:', todayReceived, 'yesterdayReceived:', yesterdayReceived, 'twoDaysAgoReceived:', twoDaysAgoReceived, 'ethPrice:', ethPrice);
+
+                let html = `
+                    <div class="stat-card">
+                        <div class="stat-label">Today</div>
+                        <div class="stat-value">$${(todayReceived * ethPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="stat-sub">${todayReceived.toFixed(6)} ETH</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Yesterday <span style="color:${pctColor};font-size:9px;">${pctChangeStr}</span></div>
+                        <div class="stat-value">$${(yesterdayReceived * ethPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="stat-sub">${yesterdayReceived.toFixed(6)} ETH</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">2 Days Ago</div>
+                        <div class="stat-value">$${(twoDaysAgoReceived * ethPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="stat-sub">${twoDaysAgoReceived.toFixed(6)} ETH</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Wallet Balance (Base)</div>
+                        <div class="stat-value">$${(ethBalance * ethPrice).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="stat-sub">${ethBalance.toFixed(6)} ETH | ETH @ $${ethPrice.toLocaleString()}</div>
+                    </div>
+                `;
+
+                if (allTxs.length > 0) {
+                    html += '<div class="tx-list"><h3>Recent Transactions</h3>';
+                    for (const tx of allTxs.slice(0, 20)) {
+                        const date = new Date(tx.timestamp * 1000).toLocaleString();
+                        html += `
+                            <div class="tx-item">
+                                <div class="tx-hash">${tx.hash.slice(0,20)}...</div>
+                                <div>${date}</div>
+                                <div class="tx-amount">+${tx.value.toFixed(6)} ETH ($${(tx.value * ethPrice).toFixed(2)})</div>
+                            </div>
+                        `;
+                    }
+                    html += '</div>';
+                } else {
+                    html += '<div class="tx-item">No transactions found in recent blocks</div>';
+                }
+
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                const msg = error.name === 'AbortError' ? 'Request timed out. Try again.' : error.message;
+                resultsDiv.innerHTML = `<div class="error">Error: ${msg}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Fetch Received ETH';
+            }
+        }
+    </script>
+</body>
+</html>
