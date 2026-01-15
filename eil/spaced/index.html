@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>EIL Space Explorer</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 784 1277'%3E%3Cpath fill='%238A92B2' d='M392.07 0L383.5 29.11v839.59l8.57 8.55 392.06-231.75z'/%3E%3Cpath fill='%2362688F' d='M392.07 0L0 645.5l392.07 231.75V472.33z'/%3E%3Cpath fill='%23454A75' d='M392.07 877.25v400.63l.34.42 392.06-551.34z'/%3E%3Cpath fill='%238A92B2' d='M392.07 1277.88V877.25L0 726.54z'/%3E%3Cpath fill='%2362688F' d='M392.07 472.33l392.06 173.17-392.06-231.75z'/%3E%3Cpath fill='%23454A75' d='M0 645.5l392.07 231.75V472.33z'/%3E%3C/svg%3E" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        overflow: hidden;
+        background: #000;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+      #app {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+      }
+      canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        touch-action: pan-x pan-y pinch-zoom;
+      }
+      #ui-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+      }
+      /* Liquid metal panel styling */
+      .liquid-metal {
+        background: linear-gradient(
+          135deg,
+          rgba(60, 60, 70, 0.4) 0%,
+          rgba(30, 30, 35, 0.5) 25%,
+          rgba(80, 80, 90, 0.3) 50%,
+          rgba(40, 40, 45, 0.5) 75%,
+          rgba(70, 70, 80, 0.4) 100%
+        );
+        border: 1px solid;
+        border-image: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.4) 0%,
+          rgba(150, 150, 160, 0.3) 25%,
+          rgba(255, 255, 255, 0.5) 50%,
+          rgba(120, 120, 130, 0.3) 75%,
+          rgba(200, 200, 210, 0.4) 100%
+        ) 1;
+        box-shadow:
+          0 2px 8px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      #stats {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        background: transparent;
+        padding: 15px 20px;
+        border: none;
+      }
+      #stats h1 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(
+          180deg,
+          #b8bcc8 0%,
+          #e8ecf4 12%,
+          #6a7080 28%,
+          #c4c8d4 42%,
+          #4a5060 58%,
+          #9ca0b0 72%,
+          #d8dce8 88%,
+          #8890a0 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #stats h1 .eth-logo {
+        width: 14px;
+        height: 22px;
+        flex-shrink: 0;
+        color: #8890a0;
+      }
+      #stats .stat {
+        margin: 8px 0;
+        background: linear-gradient(
+          180deg,
+          #a0a4b0 0%,
+          #d4d8e4 25%,
+          #5a6070 50%,
+          #b8bcc8 75%,
+          #788090 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #stats .stat span {
+        background: linear-gradient(
+          180deg,
+          #c8ccd8 0%,
+          #f0f4ff 20%,
+          #606878 45%,
+          #b0b4c0 65%,
+          #e0e4f0 85%,
+          #8890a0 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+      }
+      #legend {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        font-size: 13px;
+        background: transparent;
+        padding: 12px 16px;
+        border: none;
+      }
+      #legend .chain span {
+        background: linear-gradient(
+          180deg,
+          #a8acb8 0%,
+          #e0e4f0 25%,
+          #5a6070 50%,
+          #c0c4d0 75%,
+          #808898 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #legend .chain {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+      }
+      #legend .chain-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 12px;
+      }
+      #tooltip {
+        display: none;
+      }
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+      }
+
+      /* Transaction Log Panel */
+      #tx-log {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 240px;
+        max-height: 180px;
+        background: transparent;
+        border: none;
+        border-radius: 12px;
+        overflow: hidden;
+        pointer-events: auto;
+      }
+      #tx-log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 10px;
+        background: transparent;
+        border-bottom: 1px solid rgba(120, 130, 150, 0.3);
+      }
+      #tx-log-header h2 {
+        font-size: 9px;
+        font-weight: 700;
+        background: linear-gradient(
+          180deg,
+          #b0b4c0 0%,
+          #e4e8f4 20%,
+          #5a6070 45%,
+          #c8ccd8 70%,
+          #8890a0 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+      }
+      #tx-log-toggle {
+        background: none;
+        border: none;
+        color: rgba(160, 170, 190, 0.9);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 2px 4px;
+      }
+      #tx-log-toggle:hover {
+        color: #c0c8d8;
+      }
+      #tx-log-content {
+        max-height: 140px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+      }
+      #tx-log-content::-webkit-scrollbar {
+        width: 6px;
+      }
+      #tx-log-content::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      #tx-log-content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+      }
+      .tx-entry {
+        display: flex;
+        align-items: center;
+        padding: 5px 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        font-size: 9px;
+        transition: background 0.2s;
+        position: relative;
+      }
+      .tx-entry.highlight {
+        animation: txHighlight 1.5s ease-out;
+      }
+      @keyframes txHighlight {
+        0% {
+          background: rgba(100, 200, 255, 0.4);
+          box-shadow: inset 0 0 20px rgba(100, 200, 255, 0.3);
+        }
+        100% {
+          background: transparent;
+          box-shadow: none;
+        }
+      }
+      .tx-entry span {
+        background: linear-gradient(
+          180deg,
+          #98a0b0 0%,
+          #d8dce8 30%,
+          #586070 55%,
+          #b0b8c8 80%,
+          #708090 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .tx-entry:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .tx-entry:last-child {
+        border-bottom: none;
+      }
+      .tx-chains {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 100px;
+      }
+      .tx-chain-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+      }
+      .tx-arrow {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 8px;
+      }
+      .tx-value {
+        flex: 1;
+        text-align: right;
+        color: #4ade80;
+        font-weight: 600;
+        padding: 0 10px;
+      }
+      .tx-link {
+        background: linear-gradient(
+          180deg,
+          #90a0b0 0%,
+          #d0dce8 30%,
+          #506878 55%,
+          #a8b8c8 80%,
+          #708898 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-decoration: none;
+        font-size: 9px;
+        padding: 3px 6px;
+        border: 1px solid rgba(120, 140, 160, 0.35);
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .tx-link:hover {
+        border-color: rgba(160, 180, 200, 0.5);
+      }
+      .tx-log-collapsed #tx-log-content {
+        display: none;
+      }
+      #powered-by {
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        font-weight: 500;
+        text-decoration: none;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        pointer-events: auto;
+        transition: all 0.3s;
+        padding: 4px 10px;
+        border: none;
+        background: linear-gradient(
+          180deg,
+          #708090 0%,
+          #a8b8c8 30%,
+          #506070 55%,
+          #90a0b0 80%,
+          #607080 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #powered-by:hover {
+        background: linear-gradient(
+          180deg,
+          #90a0b0 0%,
+          #d0dce8 30%,
+          #687888 55%,
+          #b8c8d8 80%,
+          #8090a0 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #contact-btn {
+        position: absolute;
+        bottom: 15px;
+        left: calc(50% + 80px);
+        font-size: 12px;
+        text-decoration: none;
+        pointer-events: auto;
+        opacity: 0.5;
+        transition: opacity 0.3s;
+      }
+      #contact-btn:hover {
+        opacity: 0.9;
+      }
+      /* Camera Follow Toggle */
+      #follow-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: transparent;
+        border: none;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        pointer-events: auto;
+        transition: all 0.3s;
+      }
+      #follow-toggle span {
+        background: linear-gradient(
+          180deg,
+          #a8b0c0 0%,
+          #e0e8f4 22%,
+          #506070 45%,
+          #b8c0d0 68%,
+          #788898 90%,
+          #c8d0e0 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #follow-toggle:hover span {
+        background: linear-gradient(
+          180deg,
+          #c0c8d8 0%,
+          #f0f8ff 25%,
+          #687888 50%,
+          #d0d8e8 75%,
+          #90a0b0 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #follow-toggle.active span {
+        background: linear-gradient(
+          180deg,
+          #70c090 0%,
+          #c0f8d8 25%,
+          #408860 50%,
+          #90d8b0 75%,
+          #58a078 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #follow-toggle.active:hover span {
+        background: linear-gradient(
+          180deg,
+          #88d0a8 0%,
+          #d8ffe8 25%,
+          #58a078 50%,
+          #a8e8c8 75%,
+          #70b890 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      #follow-icon {
+        font-size: 16px;
+        transition: transform 0.3s;
+      }
+      #follow-toggle.active #follow-icon {
+        animation: pulse-icon 1.5s ease-in-out infinite;
+      }
+      @keyframes pulse-icon {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+      }
+      /* Mobile Styles - both portrait and landscape */
+      @media (max-width: 768px), (max-height: 500px) {
+        #stats {
+          top: 10px;
+          left: 10px;
+          padding: 10px 14px;
+          font-size: 11px;
+        }
+        #stats h1 {
+          font-size: 13px;
+          margin-bottom: 8px;
+        }
+        #stats .stat {
+          margin: 4px 0;
+        }
+        #follow-toggle {
+          top: 10px;
+          right: 10px;
+          padding: 8px 12px;
+          font-size: 10px;
+        }
+        #follow-icon {
+          font-size: 14px;
+        }
+        #legend {
+          display: none !important;
+        }
+        #legend-toggle {
+          display: none !important;
+        }
+        #powered-by {
+          bottom: 8px;
+          font-size: 8px;
+          padding: 3px 8px;
+        }
+        #contact-btn {
+          bottom: 8px;
+          left: calc(50% + 60px);
+          font-size: 10px;
+        }
+        #tx-log {
+          bottom: 10px;
+          right: 10px;
+          width: 38px;
+          max-height: 38px;
+          border-radius: 50%;
+          background: transparent;
+          border: 1px solid rgba(120, 140, 160, 0.4);
+        }
+        #tx-log.expanded {
+          width: 200px;
+          max-height: 140px;
+          border-radius: 10px;
+        }
+        #tx-log #tx-log-header {
+          display: none;
+        }
+        #tx-log.expanded #tx-log-header {
+          display: flex;
+          padding: 5px 8px;
+        }
+        #tx-log.expanded #tx-log-header h2 {
+          font-size: 8px;
+        }
+        #tx-log #tx-log-content {
+          display: none;
+        }
+        #tx-log.expanded #tx-log-content {
+          display: block;
+          max-height: 100px;
+        }
+        #tx-log.expanded .tx-entry {
+          padding: 4px 6px;
+          font-size: 8px;
+        }
+        #tx-log.expanded .tx-chain-dot {
+          width: 5px;
+          height: 5px;
+        }
+        #tx-log.expanded .tx-link {
+          font-size: 7px;
+          padding: 2px 4px;
+        }
+        #tx-log #tx-mobile-icon {
+          display: flex;
+          width: 38px;
+          height: 38px;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          cursor: pointer;
+          color: rgba(160, 180, 200, 0.8);
+        }
+        #tx-log.expanded #tx-mobile-icon {
+          display: none;
+        }
+        #stats {
+          padding: 8px 10px;
+          font-size: 9px;
+        }
+        #stats h1 {
+          font-size: 11px;
+          margin-bottom: 6px;
+          gap: 5px;
+        }
+        #stats h1 .eth-logo {
+          width: 10px;
+          height: 16px;
+        }
+        #stats .stat {
+          margin: 3px 0;
+        }
+      }
+
+      /* Desktop - hide mobile elements */
+      #legend-toggle {
+        display: none;
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(
+          145deg,
+          rgba(60, 60, 70, 0.5) 0%,
+          rgba(30, 30, 35, 0.6) 50%,
+          rgba(70, 70, 80, 0.5) 100%
+        );
+        border: 1px solid rgba(180, 180, 190, 0.25);
+        border-radius: 50%;
+        color: rgba(220, 220, 230, 0.95);
+        font-size: 18px;
+        cursor: pointer;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
+        box-shadow:
+          0 3px 12px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      #legend-toggle:active {
+        background: linear-gradient(
+          145deg,
+          rgba(80, 80, 90, 0.6) 0%,
+          rgba(50, 50, 55, 0.7) 50%,
+          rgba(90, 90, 100, 0.6) 100%
+        );
+      }
+      #tx-mobile-icon {
+        display: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Better touch targets */
+      button, a {
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-BU454hsu.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="ui-overlay">
+        <div id="stats">
+          <h1><svg class="eth-logo" viewBox="0 0 784 1277" xmlns="http://www.w3.org/2000/svg"><path d="M392.07 0L383.5 29.11v839.59l8.57 8.55 392.06-231.75z" fill="currentColor" opacity="0.8"/><path d="M392.07 0L0 645.5l392.07 231.75V472.33z" fill="currentColor" opacity="0.6"/><path d="M392.07 877.25v400.63l.34.42 392.06-551.34z" fill="currentColor" opacity="0.9"/><path d="M392.07 1277.88V877.25L0 726.54z" fill="currentColor" opacity="0.8"/></svg>EIL Space Explorer</h1>
+          <div class="stat">Transactions: <span id="tx-count">0</span></div>
+          <div class="stat">Active Chains: <span id="chain-count">0</span></div>
+          <div class="stat">Volume: <span id="volume">--</span></div>
+        </div>
+        <div id="legend"></div>
+        <button id="legend-toggle" title="Show chain legend">☰</button>
+        <div id="tooltip"></div>
+        <div id="loading">Initializing...</div>
+        <a href="https://routescan.io" target="_blank" rel="noopener noreferrer" id="powered-by">Powered by Routescan</a>
+        <a href="mailto:eil@rehashed.work" id="contact-btn" title="Contact">✉</a>
+
+        <!-- Camera Follow Toggle -->
+        <button id="follow-toggle" title="Toggle camera follow mode">
+          <span id="follow-icon">◎</span>
+          <span id="follow-text">Follow</span>
+        </button>
+
+        <!-- Transaction Log Panel -->
+        <div id="tx-log">
+          <div id="tx-mobile-icon" title="Show transactions">📋</div>
+          <div id="tx-log-header">
+            <h2>Recent Transactions</h2>
+            <button id="tx-log-toggle" title="Toggle">−</button>
+          </div>
+          <div id="tx-log-content"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Mobile UI toggles
+      document.addEventListener('DOMContentLoaded', () => {
+        // Legend toggle
+        const legendToggle = document.getElementById('legend-toggle');
+        const legend = document.getElementById('legend');
+        if (legendToggle && legend) {
+          legendToggle.addEventListener('click', () => {
+            legend.classList.toggle('visible');
+            legendToggle.textContent = legend.classList.contains('visible') ? '✕' : '☰';
+          });
+          // Close legend when clicking outside
+          document.addEventListener('click', (e) => {
+            if (!legend.contains(e.target) && e.target !== legendToggle) {
+              legend.classList.remove('visible');
+              legendToggle.textContent = '☰';
+            }
+          });
+        }
+
+        // TX log mobile toggle
+        const txLog = document.getElementById('tx-log');
+        const txMobileIcon = document.getElementById('tx-mobile-icon');
+        const txLogToggle = document.getElementById('tx-log-toggle');
+        if (txLog && txMobileIcon) {
+          txMobileIcon.addEventListener('click', () => {
+            txLog.classList.add('expanded');
+          });
+        }
+        if (txLog && txLogToggle) {
+          txLogToggle.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+              txLog.classList.remove('expanded');
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
